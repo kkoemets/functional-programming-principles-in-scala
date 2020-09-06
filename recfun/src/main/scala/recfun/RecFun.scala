@@ -20,13 +20,13 @@ object RecFun extends RecFunInterface {
     */
   def pascal(c: Int, r: Int): Int = {
     if (c == r)
-      return 1
-    if (c == 0)
-      return 1
-    if (c > r)
+      1
+    else if (c == 0)
+      1
+    else if (c > r)
       throw new java.lang.IllegalArgumentException
-
-    pascal(c - 1, r - 1) + pascal(c, r - 1)
+    else
+      pascal(c - 1, r - 1) + pascal(c, r - 1)
   }
 
   /**
@@ -36,19 +36,20 @@ object RecFun extends RecFunInterface {
     @tailrec
     def isBalanced(chars: List[Char], counter: Int): Boolean = {
       if (counter < 0)
-        return false
-      if (chars.isEmpty)
-        return counter == 0
-      val head: Char = chars.head
-      isBalanced(chars.tail, counter + findCount(head))
+        false
+      else if (chars.isEmpty)
+        counter == 0
+      else
+        isBalanced(chars.tail, counter + findCount(chars.head))
     }
 
     def findCount(char: Char): Int = {
       if (char == '(')
-        return 1
-      if (char == ')')
-        return -1
-      0
+        1
+      else if (char == ')')
+        -1
+      else
+        0
     }
 
     isBalanced(chars, 0)
@@ -58,12 +59,13 @@ object RecFun extends RecFunInterface {
    * Exercise 3
    */
   def countChange(money: Int, coins: List[Int]): Int = {
-    if (money == 0) return 1
-
-    if (money < 0) return 0
-
-    if (coins.isEmpty) return 0
-
-    countChange(money, coins.tail) + countChange(money - coins.head, coins)
+    if (money == 0)
+      1
+    else if (money < 0)
+      0
+    else if (coins.isEmpty)
+      0
+    else
+      countChange(money, coins.tail) + countChange(money - coins.head, coins)
   }
 }
