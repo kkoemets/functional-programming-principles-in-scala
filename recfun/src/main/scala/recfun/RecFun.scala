@@ -9,20 +9,31 @@ object RecFun extends RecFunInterface {
         print(s"${pascal(col, row)} ")
       println()
     }
+
+    println(pascal(0, 2))
   }
 
   /**
-   * Exercise 1
-   */
-  def pascal(c: Int, r: Int): Int = ???
+    * Exercise 1
+    */
+  def pascal(c: Int, r: Int): Int = {
+    if (c == r)
+      return 1
+    if (c == 0)
+      return 1
+    if (c > r)
+      throw new java.lang.IllegalArgumentException
+
+    pascal(c - 1, r - 1) + pascal(c, r - 1)
+  }
 
   /**
-   * Exercise 2
-   */
+    * Exercise 2
+    */
   def balance(chars: List[Char]): Boolean = ???
 
   /**
-   * Exercise 3
-   */
+    * Exercise 3
+    */
   def countChange(money: Int, coins: List[Int]): Int = ???
 }
