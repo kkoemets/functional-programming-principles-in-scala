@@ -55,7 +55,17 @@ object RecFun extends RecFunInterface {
   }
 
   /**
-    * Exercise 3
-    */
-  def countChange(money: Int, coins: List[Int]): Int = ???
+   * Exercise 3
+   */
+  def countChange(money: Int, coins: List[Int]): Int = {
+    if (money == 0) return 1
+
+    if (money < 0) return 0
+
+    if (coins.isEmpty) return 0
+
+    val cur: Int = coins.head
+
+    countChange(money, coins.tail) + countChange(money - cur, coins)
+  }
 }
