@@ -64,8 +64,6 @@ object RecFun extends RecFunInterface {
 
     if (coins.isEmpty) return 0
 
-    val cur: Int = coins.head
-
-    countChange(money, coins.tail) + countChange(money - cur, coins)
+    countChange(money, coins.tail) + countChange(money - coins.head, coins)
   }
 }
