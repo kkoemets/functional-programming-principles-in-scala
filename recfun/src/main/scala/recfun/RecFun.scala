@@ -1,5 +1,7 @@
 package recfun
 
+import scala.annotation.tailrec
+
 object RecFun extends RecFunInterface {
 
   def main(args: Array[String]): Unit = {
@@ -28,9 +30,29 @@ object RecFun extends RecFunInterface {
   }
 
   /**
-    * Exercise 2
-    */
-  def balance(chars: List[Char]): Boolean = ???
+   * Exercise 2
+   */
+  def balance(chars: List[Char]): Boolean = {
+    @tailrec
+    def isBalanced(chars: List[Char], counter: Int): Boolean = {
+      if (counter < 0)
+        return false
+      if (chars.isEmpty)
+        return counter == 0
+      val head: Char = chars.head
+      isBalanced(chars.tail, counter + findCount(head))
+    }
+
+    def findCount(char: Char): Int = {
+      if (char == '(')
+        return 1
+      if (char == ')')
+        return -1
+      0
+    }
+
+    isBalanced(chars, 0)
+  }
 
   /**
     * Exercise 3
