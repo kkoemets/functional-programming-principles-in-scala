@@ -14,8 +14,6 @@ import scala.annotation.tailrec
   */
 abstract class CodeTree {
   def hasChar(c: Char): Boolean = ???
-
-  def isLeaf: Boolean = this.isInstanceOf[Leaf]
 }
 
 case class Fork(left: CodeTree, right: CodeTree, chars: List[Char], weight: Int)
@@ -34,16 +32,14 @@ case class Leaf(char: Char, weight: Int) extends CodeTree {
 trait Huffman extends HuffmanInterface {
 
   // Part 1: Basics
-  def weight(tree: CodeTree): Int = {
-    if (tree.isLeaf) return toLeaf(tree).weight
-    val currentFork = toFork(tree)
-    weight(currentFork.left) + weight(currentFork.right)
+  def weight(tree: CodeTree): Int = tree match {
+    case Leaf(_, weight)         => weight
+    case Fork(left, right, _, _) => weight(left) + weight(right)
   }
 
-  def chars(tree: CodeTree): List[Char] = {
-    if (tree.isLeaf) return List(toLeaf(tree).char)
-    val currentFork: Fork = toFork(tree)
-    chars(currentFork.left) ::: chars(currentFork.right)
+  def chars(tree: CodeTree): List[Char] = tree match {
+    case Leaf(char, _)           => List(char)
+    case Fork(left, right, _, _) => chars(left) ::: chars(right)
   }
 
   // Part 2: Generating Huffman trees
@@ -127,30 +123,32 @@ trait Huffman extends HuffmanInterface {
     * unchanged.
     */
   def combine(trees: List[CodeTree]): List[CodeTree] = {
-    if (trees.length < 2) return trees
+    def combineImpl(): List[CodeTree] = {
+      def getCharsWithWeights(codeTree: CodeTree): (List[Char], Int) =
+        codeTree match {
+          case Leaf(char, weight)               => (List(char), weight)
+          case Fork(left, right, chars, weight) => (chars, weight)
+        }
 
-    def getCharsWithWeights(codeTree: CodeTree): (List[Char], Int) = {
-      if (codeTree.isLeaf)
-        (List(toLeaf(codeTree).char), toLeaf(codeTree).weight)
-      else
-        (toFork(codeTree).chars, toFork(codeTree).weight)
+      val first = getCharsWithWeights(trees.head)
+      val second = getCharsWithWeights(trees.tail.head)
+
+      def placeAsAscending(trees: List[CodeTree],
+                           fork: Fork): List[CodeTree] = {
+        if (trees.isEmpty) trees ::: List(fork)
+        else if (getCharsWithWeights(trees.head)._2 > fork.weight)
+          List(fork) ::: trees
+        else List(trees.head) ::: placeAsAscending(trees.tail, fork)
+      }
+
+      placeAsAscending(trees.tail.tail,
+                       Fork(trees.head,
+                            trees.tail.head,
+                            first._1 ::: second._1,
+                            first._2 + second._2))
     }
 
-    val first = getCharsWithWeights(trees.head)
-    val second = getCharsWithWeights(trees.tail.head)
-
-    def placeAsAscending(trees: List[CodeTree], fork: Fork): List[CodeTree] = {
-      if (trees.isEmpty) trees ::: List(fork)
-      else if (getCharsWithWeights(trees.head)._2 > fork.weight)
-        List(fork) ::: trees
-      else List(trees.head) ::: placeAsAscending(trees.tail, fork)
-    }
-
-    placeAsAscending(trees.tail.tail,
-                     Fork(trees.head,
-                          trees.tail.head,
-                          first._1 ::: second._1,
-                          first._2 + second._2))
+    if (trees.length < 2) trees else combineImpl()
   }
 
   /**
@@ -189,22 +187,18 @@ trait Huffman extends HuffmanInterface {
     * the resulting list of characters.
     */
   def decode(tree: CodeTree, bits: List[Bit]): List[Char] = {
-    def decodeImpl(current: CodeTree, bitsLeft: List[Bit]): List[Char] = {
-      if (current.isLeaf)
-        if (bitsLeft.isEmpty)
-          List(toLeaf(current).char)
-        else
-          toLeaf(current).char :: decodeImpl(tree, bitsLeft)
-      else if (bitsLeft.head == 0)
-        decodeImpl(toFork(current).left, bitsLeft.tail)
-      else decodeImpl(toFork(current).right, bitsLeft.tail)
-    }
+    def decodeImpl(current: CodeTree, bitsLeft: List[Bit]): List[Char] =
+      current match {
+        case Leaf(char, weight) =>
+          if (bitsLeft.isEmpty)
+            List(char)
+          else char :: decodeImpl(tree, bitsLeft)
+        case Fork(left, right, chars, weight) =>
+          decodeImpl(if (bitsLeft.head == 0) left else right, bitsLeft.tail)
+      }
 
     decodeImpl(tree, bits)
   }
-
-  def toLeaf(tree: CodeTree): Leaf = tree.asInstanceOf[Leaf]
-  def toFork(tree: CodeTree): Fork = tree.asInstanceOf[Fork]
 
   /**
     * A Huffman coding tree for the French language.
@@ -317,14 +311,15 @@ trait Huffman extends HuffmanInterface {
     * into a sequence of bits.
     */
   def encode(tree: CodeTree)(text: List[Char]): List[Bit] = {
-    def encodeImpl(current: CodeTree, currentChar: Char): List[Bit] = {
-      if (current.isLeaf)
-        List()
-      else if (toFork(current).left.hasChar(currentChar))
-        0 :: encodeImpl(toFork(current).left, currentChar)
-      else
-        1 :: encodeImpl(toFork(current).right, currentChar)
-    }
+    def encodeImpl(current: CodeTree, currentChar: Char): List[Bit] =
+      current match {
+        case Leaf(char, weight) => List()
+        case Fork(left, right, chars, weight) =>
+          if (left.hasChar(currentChar))
+            0 :: encodeImpl(left, currentChar)
+          else
+            1 :: encodeImpl(right, currentChar)
+      }
 
     text.flatMap(char => encodeImpl(tree, char))
   }
