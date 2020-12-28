@@ -28,59 +28,92 @@ object Anagrams extends AnagramsInterface {
 
   /** Converts the word into its character occurrence list.
    *
-   *  Note: the uppercase and lowercase version of the character are treated as the
-   *  same character, and are represented as a lowercase character in the occurrence list.
+   * Note: the uppercase and lowercase version of the character are treated as the
+   * same character, and are represented as a lowercase character in the occurrence list.
    *
-   *  Note: you must use `groupBy` to implement this method!
+   * Note: you must use `groupBy` to implement this method!
    */
-  def wordOccurrences(w: Word): Occurrences = ???
+  def wordOccurrences(w: Word): Occurrences = w
+    .map(ch => ch.toLower)
+    .toSeq
+    .groupBy((c: Char) => c)
+    .toList
+    .map(t => (t._1, t._2.length))
+    .sortBy(_._1)
 
   /** Converts a sentence into its character occurrence list. */
-  def sentenceOccurrences(s: Sentence): Occurrences = ???
+  def sentenceOccurrences(s: Sentence): Occurrences = s
+    .flatMap(w => wordOccurrences(w))
+    .groupBy(p => p._1)
+    .toList
+    .map(p => (p._1, p._2.map(_._2)))
+    .map(p => (p._1, p._2.sum))
+    .sortBy(_._1)
+
 
   /** The `dictionaryByOccurrences` is a `Map` from different occurrences to a sequence of all
-   *  the words that have that occurrence count.
-   *  This map serves as an easy way to obtain all the anagrams of a word given its occurrence list.
+   * the words that have that occurrence count.
+   * This map serves as an easy way to obtain all the anagrams of a word given its occurrence list.
    *
-   *  For example, the word "eat" has the following character occurrence list:
+   * For example, the word "eat" has the following character occurrence list:
    *
-   *     `List(('a', 1), ('e', 1), ('t', 1))`
+   * `List(('a', 1), ('e', 1), ('t', 1))`
    *
-   *  Incidentally, so do the words "ate" and "tea".
+   * Incidentally, so do the words "ate" and "tea".
    *
-   *  This means that the `dictionaryByOccurrences` map will contain an entry:
+   * This means that the `dictionaryByOccurrences` map will contain an entry:
    *
-   *    List(('a', 1), ('e', 1), ('t', 1)) -> Seq("ate", "eat", "tea")
+   * List(('a', 1), ('e', 1), ('t', 1)) -> Seq("ate", "eat", "tea")
    *
    */
-  lazy val dictionaryByOccurrences: Map[Occurrences, List[Word]] = ???
+  lazy val dictionaryByOccurrences: Map[Occurrences, List[Word]] = dictionary
+    .map(word => (wordOccurrences(word), word))
+    .groupBy((c: (Occurrences, Word)) => c._1)
+    .map((c: (Occurrences, List[(Occurrences, Word)])) => (c._1, c._2.map(p => p._2)))
 
   /** Returns all the anagrams of a given word. */
-  def wordAnagrams(word: Word): List[Word] = ???
+  def wordAnagrams(word: Word): List[Word] = dictionaryByOccurrences
+    .getOrElse(wordOccurrences(word), List())
 
   /** Returns the list of all subsets of the occurrence list.
    *  This includes the occurrence itself, i.e. `List(('k', 1), ('o', 1))`
    *  is a subset of `List(('k', 1), ('o', 1))`.
    *  It also include the empty subset `List()`.
    *
-   *  Example: the subsets of the occurrence list `List(('a', 2), ('b', 2))` are:
+   * Example: the subsets of the occurrence list `List(('a', 2), ('b', 2))` are:
    *
-   *    List(
-   *      List(),
-   *      List(('a', 1)),
-   *      List(('a', 2)),
-   *      List(('b', 1)),
-   *      List(('a', 1), ('b', 1)),
-   *      List(('a', 2), ('b', 1)),
-   *      List(('b', 2)),
-   *      List(('a', 1), ('b', 2)),
-   *      List(('a', 2), ('b', 2))
-   *    )
+   * List(
+   * List(),
+   * List(('a', 1)),
+   * List(('a', 2)),
+   * List(('b', 1)),
+   * List(('a', 1), ('b', 1)),
+   * List(('a', 2), ('b', 1)),
+   * List(('b', 2)),
+   * List(('a', 1), ('b', 2)),
+   * List(('a', 2), ('b', 2))
+   * )
    *
-   *  Note that the order of the occurrence list subsets does not matter -- the subsets
-   *  in the example above could have been displayed in some other order.
+   * Note that the order of the occurrence list subsets does not matter -- the subsets
+   * in the example above could have been displayed in some other order.
    */
-  def combinations(occurrences: Occurrences): List[Occurrences] = ???
+  def combinations(occurrences: Occurrences): List[Occurrences] = {
+    if (occurrences.isEmpty) List(List()) else {
+      val n = 1 to occurrences.length
+      val res: List[Occurrences] = n.map(i => {
+        val take: Occurrences = occurrences.take(i)
+        val rest: Occurrences = occurrences.drop(i)
+
+        val takeReduced: Occurrences = (take.take(take.length - 1) ::: List((take.last._1, take.last._2 - 1)))
+          .filter(p => p._2 > 0)
+
+        takeReduced ::: rest
+      }).toList
+
+      val value: List[Occurrences] = res.flatMap(o => combinations(o))
+      List(occurrences) ::: value ::: List()
+    }
+  }
 
   /** Subtracts occurrence list `y` from occurrence list `x`.
    *
